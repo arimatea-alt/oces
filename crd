@@ -1,0 +1,247 @@
+-- FIXED VERSION - Simplified & More Reliable
+-- LocalScript - Paste di StarterPlayerScripts atau StarterGui
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Wait for Remote (IMPORTANT FIX)
+local remoteSuccess, remote = pcall(function()
+    return ReplicatedStorage:WaitForChild("Remote", 10):WaitForChild("Function", 10):WaitForChild("InventoryFunction", 10)
+end)
+
+if not remoteSuccess or not remote then
+    warn("Remote tidak ditemukan! Pastikan script dijalankan setelah game load.")
+    return
+end
+
+print("Remote ditemukan:", remote)
+
+-- Create GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MirrorAutoFarm"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 280, 0, 220)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -110)
+mainFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.2)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+-- Title Bar (Draggable)
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.BackgroundColor3 = Color3.new(0.1, 0.1, 0.15)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(1, -50, 1, 0)
+titleText.Position = UDim2.new(0, 15, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "🔮 Mirror Auto Farm"
+titleText.TextColor3 = Color3.new(1, 1, 1)
+titleText.TextScaled = true
+titleText.Font = Enum.Font.GothamBold
+titleText.Parent = titleBar
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 35, 0, 35)
+closeBtn.Position = UDim2.new(1, -40, 0, 2.5)
+closeBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeBtn
+
+-- Box Toggle
+local boxBtn = Instance.new("TextButton")
+boxBtn.Size = UDim2.new(0, 250, 0, 40)
+boxBtn.Position = UDim2.new(0, 15, 0, 55)
+boxBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+boxBtn.Text = "❌ AUTO BOX - OFF"
+boxBtn.TextColor3 = Color3.new(1, 1, 1)
+boxBtn.TextScaled = true
+boxBtn.Font = Enum.Font.GothamBold
+boxBtn.Parent = mainFrame
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 10)
+boxCorner.Parent = boxBtn
+
+-- Card Toggle
+local cardBtn = Instance.new("TextButton")
+cardBtn.Size = UDim2.new(0, 250, 0, 40)
+cardBtn.Position = UDim2.new(0, 15, 0, 105)
+cardBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+cardBtn.Text = "❌ AUTO CARD - OFF"
+cardBtn.TextColor3 = Color3.new(1, 1, 1)
+cardBtn.TextScaled = true
+cardBtn.Font = Enum.Font.GothamBold
+cardBtn.Parent = mainFrame
+
+local cardCorner = Instance.new("UICorner")
+cardCorner.CornerRadius = UDim.new(0, 10)
+cardCorner.Parent = cardBtn
+
+-- Status
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(0, 250, 0, 30)
+statusLabel.Position = UDim2.new(0, 15, 0, 155)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "⏳ Status: Ready"
+statusLabel.TextColor3 = Color3.new(0.8, 0.8, 1)
+statusLabel.TextScaled = true
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.Parent = mainFrame
+
+-- Variables
+local boxEnabled = false
+local cardEnabled = false
+local autoFarmConnection = nil
+local currentMode = nil
+local dragStart = nil
+local startPos = nil
+local dragging = false
+
+-- DRAG FUNCTION
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- BOX TOGGLE
+boxBtn.MouseButton1Click:Connect(function()
+    boxEnabled = not boxEnabled
+    if boxEnabled then
+        boxBtn.Text = "✅ AUTO BOX - ON"
+        boxBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
+    else
+        boxBtn.Text = "❌ AUTO BOX - OFF"
+        boxBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+    end
+    print("Box toggle:", boxEnabled)
+end)
+
+-- CARD TOGGLE
+cardBtn.MouseButton1Click:Connect(function()
+    cardEnabled = not cardEnabled
+    if cardEnabled then
+        cardBtn.Text = "✅ AUTO CARD - ON"
+        cardBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
+    else
+        cardBtn.Text = "❌ AUTO CARD - OFF"
+        cardBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+    end
+    print("Card toggle:", cardEnabled)
+end)
+
+-- CLOSE
+closeBtn.MouseButton1Click:Connect(function()
+    if autoFarmConnection then
+        autoFarmConnection:Disconnect()
+    end
+    screenGui:Destroy()
+    print("GUI ditutup")
+end)
+
+-- AUTO FARM LOOP (Alternating)
+local function startAutoFarm()
+    if autoFarmConnection then return end
+    
+    autoFarmConnection = RunService.Heartbeat:Connect(function()
+        if not (boxEnabled or cardEnabled) then
+            statusLabel.Text = "⏹️ Status: Stopped"
+            return
+        end
+        
+        -- Prioritaskan yang aktif, bergantian otomatis
+        if boxEnabled and (not currentMode or currentMode == "card") then
+            statusLabel.Text = "📦 Status: Opening Box..."
+            currentMode = "box"
+            pcall(function()
+                remote:InvokeServer("Mirror's Gearbox")
+            end)
+        elseif cardEnabled and (not currentMode or currentMode == "box") then
+            statusLabel.Text = "🃏 Status: Opening Card..."
+            currentMode = "card"
+            pcall(function()
+                remote:InvokeServer("Mirror's Card")
+            end)
+        end
+    end)
+    
+    statusLabel.Text = "▶️ Status: Running..."
+    print("Auto farm dimulai!")
+end
+
+-- Auto start jika ada toggle aktif
+spawn(function()
+    wait(1)
+    if boxEnabled or cardEnabled then
+        startAutoFarm()
+    end
+end)
+
+-- Monitor toggle changes
+boxBtn.MouseButton1Click:Connect(function()
+    if boxEnabled or cardEnabled then
+        startAutoFarm()
+    else
+        if autoFarmConnection then
+            autoFarmConnection:Disconnect()
+            autoFarmConnection = nil
+        end
+    end
+end)
+
+cardBtn.MouseButton1Click:Connect(function()
+    if boxEnabled or cardEnabled then
+        startAutoFarm()
+    else
+        if autoFarmConnection then
+            autoFarmConnection:Disconnect()
+            autoFarmConnection = nil
+        end
+    end
+end)
+
+print("✅ Mirror Auto Farm GUI LOADED! Drag title bar untuk pindah posisi.")
+print("📝 Cara pakai: Click toggle ON, auto bergantian box/card!")
