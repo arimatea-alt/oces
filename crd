@@ -1,37 +1,69 @@
--- FIXED VERSION - Simplified & More Reliable
--- LocalScript - Paste di StarterPlayerScripts atau StarterGui
-
+-- Auto Open Box Script - PERFECT GUI (Minimize FIXED)
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Wait for Remote (IMPORTANT FIX)
-local remoteSuccess, remote = pcall(function()
-    return ReplicatedStorage:WaitForChild("Remote", 10):WaitForChild("Function", 10):WaitForChild("InventoryFunction", 10)
-end)
+-- Configuration
+local BOXES = {
+    {name = "Progrise Cache", enabled = true},
+    {name = "War's Box", enabled = true},
+    {name = "Essence's Gearbox", enabled = true},
+    {name = "Mirror's Gearbox", enabled = true},
+    {name = "Mirror's Card", enabled = true}
+}
 
-if not remoteSuccess or not remote then
-    warn("Remote tidak ditemukan! Pastikan script dijalankan setelah game load.")
-    return
+local masterToggle = false
+local connection
+local remotePath = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Function"):WaitForChild("InventoryFunction")
+
+-- Functions
+local function openBox(boxName)
+    pcall(function() remotePath:InvokeServer(boxName) end)
 end
 
-print("Remote ditemukan:", remote)
+local function openEnabledBoxes()
+    for _, box in pairs(BOXES) do
+        if box.enabled then openBox(box.name) end
+    end
+end
 
--- Create GUI
+local function startAutoOpen()
+    if connection then connection:Disconnect() end
+    connection = RunService.Heartbeat:Connect(function()
+        if masterToggle then openEnabledBoxes() end
+    end)
+end
+
+local function stopAutoOpen()
+    masterToggle = false
+    if connection then connection:Disconnect() connection = nil end
+end
+
+local function updateStatus()
+    local count = 0
+    for _, box in pairs(BOXES) do if box.enabled then count = count + 1 end end
+    if statusLabel then
+        statusLabel.Text = count .. "/5 Active"
+        statusLabel.TextColor3 = count > 0 and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(200, 200, 200)
+    end
+end
+
+-- GUI Creation
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "MirrorAutoFarm"
+screenGui.Name = "AutoBoxGUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 -- Main Frame
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 280, 0, 220)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -110)
-mainFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.2)
+mainFrame.Size = UDim2.new(0, 280, 0, 350)
+mainFrame.Position = UDim2.new(0, 20, 0, 20)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
@@ -39,104 +71,206 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 12)
 mainCorner.Parent = mainFrame
 
--- Title Bar (Draggable)
-local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 40)
-titleBar.BackgroundColor3 = Color3.new(0.1, 0.1, 0.15)
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 50)
+header.Position = UDim2.new(0, 0, 0, 0)
+header.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+header.Parent = mainFrame
 
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 12)
-titleCorner.Parent = titleBar
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 12)
+headerCorner.Parent = header
 
-local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, -50, 1, 0)
-titleText.Position = UDim2.new(0, 15, 0, 0)
-titleText.BackgroundTransparency = 1
-titleText.Text = "🔮 Mirror Auto Farm"
-titleText.TextColor3 = Color3.new(1, 1, 1)
-titleText.TextScaled = true
-titleText.Font = Enum.Font.GothamBold
-titleText.Parent = titleBar
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -80, 1, 0)
+title.Position = UDim2.new(0, 15, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "AUTO BOX OPENER"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
 
--- Close Button
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 35, 0, 35)
-closeBtn.Position = UDim2.new(1, -40, 0, 2.5)
-closeBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.TextScaled = true
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = titleBar
+-- Minimize Button
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 35, 0, 35)
+minimizeBtn.Position = UDim2.new(1, -45, 0, 7.5)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextScaled = true
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.Parent = header
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeBtn
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 8)
+minCorner.Parent = minimizeBtn
 
--- Box Toggle
-local boxBtn = Instance.new("TextButton")
-boxBtn.Size = UDim2.new(0, 250, 0, 40)
-boxBtn.Position = UDim2.new(0, 15, 0, 55)
-boxBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
-boxBtn.Text = "❌ AUTO BOX - OFF"
-boxBtn.TextColor3 = Color3.new(1, 1, 1)
-boxBtn.TextScaled = true
-boxBtn.Font = Enum.Font.GothamBold
-boxBtn.Parent = mainFrame
+-- Content
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, -20, 1, -70)
+content.Position = UDim2.new(0, 10, 0, 60)
+content.BackgroundTransparency = 1
+content.Parent = mainFrame
 
-local boxCorner = Instance.new("UICorner")
-boxCorner.CornerRadius = UDim.new(0, 10)
-boxCorner.Parent = boxBtn
+-- Master Toggle
+local masterBtn = Instance.new("TextButton")
+masterBtn.Size = UDim2.new(1, 0, 0, 45)
+masterBtn.Position = UDim2.new(0, 0, 0, 0)
+masterBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
+masterBtn.Text = "MASTER: OFF"
+masterBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+masterBtn.TextScaled = true
+masterBtn.Font = Enum.Font.GothamBold
+masterBtn.Parent = content
 
--- Card Toggle
-local cardBtn = Instance.new("TextButton")
-cardBtn.Size = UDim2.new(0, 250, 0, 40)
-cardBtn.Position = UDim2.new(0, 15, 0, 105)
-cardBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
-cardBtn.Text = "❌ AUTO CARD - OFF"
-cardBtn.TextColor3 = Color3.new(1, 1, 1)
-cardBtn.TextScaled = true
-cardBtn.Font = Enum.Font.GothamBold
-cardBtn.Parent = mainFrame
+local masterCorner = Instance.new("UICorner")
+masterCorner.CornerRadius = UDim.new(0, 10)
+masterCorner.Parent = masterBtn
 
-local cardCorner = Instance.new("UICorner")
-cardCorner.CornerRadius = UDim.new(0, 10)
-cardCorner.Parent = cardBtn
+-- ScrollFrame
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, 0, 1, -60)
+scrollFrame.Position = UDim2.new(0, 0, 0, 55)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 4
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
+scrollFrame.Parent = content
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 6)
+listLayout.Parent = scrollFrame
 
 -- Status
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0, 250, 0, 30)
-statusLabel.Position = UDim2.new(0, 15, 0, 155)
+statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, 0, 0, 25)
+statusLabel.Position = UDim2.new(0, 0, 1, -25)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "⏳ Status: Ready"
-statusLabel.TextColor3 = Color3.new(0.8, 0.8, 1)
+statusLabel.Text = "5/5 Active"
+statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
 statusLabel.TextScaled = true
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.Parent = mainFrame
+statusLabel.Font = Enum.Font.GothamSemibold
+statusLabel.Parent = content
 
--- Variables
-local boxEnabled = false
-local cardEnabled = false
-local autoFarmConnection = nil
-local currentMode = nil
+-- Box Toggles
+local icons = {"🎁", "⚔️", "⚙️", "🔮", "🃏"}
+for i, box in pairs(BOXES) do
+    local boxFrame = Instance.new("Frame")
+    boxFrame.Size = UDim2.new(1, 0, 0, 42)
+    boxFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+    boxFrame.Parent = scrollFrame
+    
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 8)
+    boxCorner.Parent = boxFrame
+    
+    local icon = Instance.new("TextLabel")
+    icon.Size = UDim2.new(0, 35, 1, 0)
+    icon.Position = UDim2.new(0, 10, 0, 0)
+    icon.BackgroundTransparency = 1
+    icon.Text = icons[i]
+    icon.TextColor3 = Color3.fromRGB(100, 200, 255)
+    icon.TextScaled = true
+    icon.Font = Enum.Font.GothamBold
+    icon.Parent = boxFrame
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    nameLabel.Position = UDim2.new(0, 50, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = box.name
+    nameLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
+    nameLabel.TextScaled = true
+    nameLabel.Font = Enum.Font.Gotham
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.Parent = boxFrame
+    
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0, 55, 0, 30)
+    toggleBtn.Position = UDim2.new(1, -65, 0.5, -15)
+    toggleBtn.BackgroundColor3 = box.enabled and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
+    toggleBtn.Text = box.enabled and "ON" or "OFF"
+    toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleBtn.TextScaled = true
+    toggleBtn.Font = Enum.Font.GothamBold
+    toggleBtn.Parent = boxFrame
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 8)
+    toggleCorner.Parent = toggleBtn
+    
+    toggleBtn.MouseButton1Click:Connect(function()
+        box.enabled = not box.enabled
+        toggleBtn.Text = box.enabled and "ON" or "OFF"
+        toggleBtn.BackgroundColor3 = box.enabled and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
+        updateStatus()
+    end)
+end
+
+-- Auto canvas
+listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+end)
+
+updateStatus()
+
+-- Master Toggle
+masterBtn.MouseButton1Click:Connect(function()
+    masterToggle = not masterToggle
+    if masterToggle then
+        masterBtn.Text = "MASTER: ON"
+        masterBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 80)
+        statusLabel.Text = "Opening " .. enabledCount .. "/5"
+        startAutoOpen()
+    else
+        masterBtn.Text = "MASTER: OFF"
+        masterBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        statusLabel.Text = enabledCount .. "/5 Active"
+        stopAutoOpen()
+    end
+end)
+
+-- FIXED Minimize - No text leak
+local isMinimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        -- Hide ALL content elements
+        masterBtn.Visible = false
+        scrollFrame.Visible = false
+        statusLabel.Visible = false
+        
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 60)}):Play()
+        TweenService:Create(content, TweenInfo.new(0.3), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        minimizeBtn.Text = "+"
+        minimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+    else
+        -- Show ALL content elements
+        masterBtn.Visible = true
+        scrollFrame.Visible = true
+        statusLabel.Visible = true
+        
+        TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 350)}):Play()
+        TweenService:Create(content, TweenInfo.new(0.3), {Size = UDim2.new(1, -20, 1, -70)}):Play()
+        minimizeBtn.Text = "-"
+        minimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    end
+end)
+
+-- Drag
+local dragging = false
 local dragStart = nil
 local startPos = nil
-local dragging = false
 
--- DRAG FUNCTION
-titleBar.InputBegan:Connect(function(input)
+header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
     end
 end)
 
@@ -147,101 +281,10 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- BOX TOGGLE
-boxBtn.MouseButton1Click:Connect(function()
-    boxEnabled = not boxEnabled
-    if boxEnabled then
-        boxBtn.Text = "✅ AUTO BOX - ON"
-        boxBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
-    else
-        boxBtn.Text = "❌ AUTO BOX - OFF"
-        boxBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
-    end
-    print("Box toggle:", boxEnabled)
-end)
-
--- CARD TOGGLE
-cardBtn.MouseButton1Click:Connect(function()
-    cardEnabled = not cardEnabled
-    if cardEnabled then
-        cardBtn.Text = "✅ AUTO CARD - ON"
-        cardBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
-    else
-        cardBtn.Text = "❌ AUTO CARD - OFF"
-        cardBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
-    end
-    print("Card toggle:", cardEnabled)
-end)
-
--- CLOSE
-closeBtn.MouseButton1Click:Connect(function()
-    if autoFarmConnection then
-        autoFarmConnection:Disconnect()
-    end
-    screenGui:Destroy()
-    print("GUI ditutup")
-end)
-
--- AUTO FARM LOOP (Alternating)
-local function startAutoFarm()
-    if autoFarmConnection then return end
-    
-    autoFarmConnection = RunService.Heartbeat:Connect(function()
-        if not (boxEnabled or cardEnabled) then
-            statusLabel.Text = "⏹️ Status: Stopped"
-            return
-        end
-        
-        -- Prioritaskan yang aktif, bergantian otomatis
-        if boxEnabled and (not currentMode or currentMode == "card") then
-            statusLabel.Text = "📦 Status: Opening Box..."
-            currentMode = "box"
-            pcall(function()
-                remote:InvokeServer("Mirror's Gearbox")
-            end)
-        elseif cardEnabled and (not currentMode or currentMode == "box") then
-            statusLabel.Text = "🃏 Status: Opening Card..."
-            currentMode = "card"
-            pcall(function()
-                remote:InvokeServer("Mirror's Card")
-            end)
-        end
-    end)
-    
-    statusLabel.Text = "▶️ Status: Running..."
-    print("Auto farm dimulai!")
-end
-
--- Auto start jika ada toggle aktif
-spawn(function()
-    wait(1)
-    if boxEnabled or cardEnabled then
-        startAutoFarm()
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
     end
 end)
 
--- Monitor toggle changes
-boxBtn.MouseButton1Click:Connect(function()
-    if boxEnabled or cardEnabled then
-        startAutoFarm()
-    else
-        if autoFarmConnection then
-            autoFarmConnection:Disconnect()
-            autoFarmConnection = nil
-        end
-    end
-end)
-
-cardBtn.MouseButton1Click:Connect(function()
-    if boxEnabled or cardEnabled then
-        startAutoFarm()
-    else
-        if autoFarmConnection then
-            autoFarmConnection:Disconnect()
-            autoFarmConnection = nil
-        end
-    end
-end)
-
-print("✅ Mirror Auto Farm GUI LOADED! Drag title bar untuk pindah posisi.")
-print("📝 Cara pakai: Click toggle ON, auto bergantian box/card!")
+print("✅ GUI PERFECT! Minimize FIXED - No text leak!")
