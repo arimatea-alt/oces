@@ -1,4 +1,4 @@
--- Auto Open Box Script - PERFECT GUI (Minimize FIXED)
+-- Auto Open Box Script - PERFECT GUI (FIXED LOADING + AUTO OPEN)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -19,23 +19,44 @@ local BOXES = {
 
 local masterToggle = false
 local connection
-local remotePath = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Function"):WaitForChild("InventoryFunction")
+local remotePath
+local lastOpenTime = 0
+local DELAY = 0.3
+
+-- Wait for remote safely
+pcall(function()
+    remotePath = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Function"):WaitForChild("InventoryFunction")
+end)
 
 -- Functions
 local function openBox(boxName)
-    pcall(function() remotePath:InvokeServer(boxName) end)
+    if not remotePath then return end
+    local now = tick()
+    if now - lastOpenTime < DELAY then return end
+    pcall(function() 
+        remotePath:InvokeServer(boxName)
+        lastOpenTime = now
+        print("✅ Opened:", boxName)
+    end)
 end
 
 local function openEnabledBoxes()
     for _, box in pairs(BOXES) do
-        if box.enabled then openBox(box.name) end
+        if box.enabled then 
+            openBox(box.name)
+            task.wait(0.1)
+        end
     end
 end
 
 local function startAutoOpen()
     if connection then connection:Disconnect() end
+    local counter = 0
     connection = RunService.Heartbeat:Connect(function()
-        if masterToggle then openEnabledBoxes() end
+        counter = counter + 1
+        if masterToggle and counter % 10 == 0 then
+            spawn(openEnabledBoxes)
+        end
     end)
 end
 
@@ -44,22 +65,18 @@ local function stopAutoOpen()
     if connection then connection:Disconnect() connection = nil end
 end
 
-local function updateStatus()
+local function getEnabledCount()
     local count = 0
     for _, box in pairs(BOXES) do if box.enabled then count = count + 1 end end
-    if statusLabel then
-        statusLabel.Text = count .. "/5 Active"
-        statusLabel.TextColor3 = count > 0 and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(200, 200, 200)
-    end
+    return count
 end
 
--- GUI Creation
+-- GUI Creation (FIXED ORDER)
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AutoBoxGUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 280, 0, 350)
 mainFrame.Position = UDim2.new(0, 20, 0, 20)
@@ -93,7 +110,6 @@ title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
 
--- Minimize Button
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 35, 0, 35)
 minimizeBtn.Position = UDim2.new(1, -45, 0, 7.5)
@@ -145,13 +161,13 @@ listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Padding = UDim.new(0, 6)
 listLayout.Parent = scrollFrame
 
--- Status
-statusLabel = Instance.new("TextLabel")
+-- Status (FIXED: Dibuat sebelum dipakai)
+local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, 0, 0, 25)
 statusLabel.Position = UDim2.new(0, 0, 1, -25)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "5/5 Active"
-statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+statusLabel.Text = "0/5 Active"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.GothamSemibold
 statusLabel.Parent = content
@@ -207,7 +223,9 @@ for i, box in pairs(BOXES) do
         box.enabled = not box.enabled
         toggleBtn.Text = box.enabled and "ON" or "OFF"
         toggleBtn.BackgroundColor3 = box.enabled and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
-        updateStatus()
+        local count = getEnabledCount()
+        statusLabel.Text = count .. "/5 Active"
+        statusLabel.TextColor3 = count > 0 and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(200, 200, 200)
     end)
 end
 
@@ -216,11 +234,10 @@ listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
 end)
 
-updateStatus()
-
--- Master Toggle
+-- Master Toggle (FIXED)
 masterBtn.MouseButton1Click:Connect(function()
     masterToggle = not masterToggle
+    local enabledCount = getEnabledCount()
     if masterToggle then
         masterBtn.Text = "MASTER: ON"
         masterBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 80)
@@ -234,28 +251,22 @@ masterBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- FIXED Minimize - No text leak
+-- Minimize
 local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
-        -- Hide ALL content elements
         masterBtn.Visible = false
         scrollFrame.Visible = false
         statusLabel.Visible = false
-        
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 60)}):Play()
-        TweenService:Create(content, TweenInfo.new(0.3), {Size = UDim2.new(0, 0, 0, 0)}):Play()
         minimizeBtn.Text = "+"
         minimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
     else
-        -- Show ALL content elements
         masterBtn.Visible = true
         scrollFrame.Visible = true
         statusLabel.Visible = true
-        
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 280, 0, 350)}):Play()
-        TweenService:Create(content, TweenInfo.new(0.3), {Size = UDim2.new(1, -20, 1, -70)}):Play()
         minimizeBtn.Text = "-"
         minimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
     end
@@ -287,4 +298,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("✅ GUI PERFECT! Minimize FIXED - No text leak!")
+print("✅ GUI LOADED PERFECT! 5 Boxes + Auto Open + Drag + Minimize!")
