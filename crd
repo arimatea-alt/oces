@@ -1,4 +1,4 @@
--- Auto Open Box Script - PERFECT GUI (FIXED LOADING + AUTO OPEN)
+-- Auto Open Box Script - CENTER SCREEN (TENGGAH LAYAR)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -71,7 +71,7 @@ local function getEnabledCount()
     return count
 end
 
--- GUI Creation (FIXED ORDER)
+-- GUI Creation (CENTER SCREEN POSITION)
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AutoBoxGUI"
 screenGui.ResetOnSpawn = false
@@ -79,7 +79,7 @@ screenGui.Parent = playerGui
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 280, 0, 350)
-mainFrame.Position = UDim2.new(0, 20, 0, 20)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -175)  -- ✅ CENTER SCREEN!
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
@@ -161,7 +161,7 @@ listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Padding = UDim.new(0, 6)
 listLayout.Parent = scrollFrame
 
--- Status (FIXED: Dibuat sebelum dipakai)
+-- Status
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, 0, 0, 25)
 statusLabel.Position = UDim2.new(0, 0, 1, -25)
@@ -234,7 +234,12 @@ listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
 end)
 
--- Master Toggle (FIXED)
+-- Update status awal
+local count = getEnabledCount()
+statusLabel.Text = count .. "/5 Active"
+statusLabel.TextColor3 = count > 0 and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(200, 200, 200)
+
+-- Master Toggle
 masterBtn.MouseButton1Click:Connect(function()
     masterToggle = not masterToggle
     local enabledCount = getEnabledCount()
@@ -298,4 +303,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("✅ GUI LOADED PERFECT! 5 Boxes + Auto Open + Drag + Minimize!")
+print("✅ CENTER SCREEN GUI LOADED! Drag header, 5 boxes ready!")
