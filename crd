@@ -8,13 +8,14 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Configuration
+-- Configuration (ADDED Smart's Gearbox)
 local BOXES = {
     {name = "Progrise Cache", enabled = true},
     {name = "War's Box", enabled = true},
     {name = "Essence's Gearbox", enabled = true},
     {name = "Mirror's Gearbox", enabled = true},
-    {name = "Mirror's Card", enabled = true}
+    {name = "Mirror's Card", enabled = true},
+    {name = "Smart's Gearbox", enabled = true}  -- ✅ NEW BOX ADDED
 }
 
 local masterToggle = false
@@ -161,19 +162,19 @@ listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Padding = UDim.new(0, 6)
 listLayout.Parent = scrollFrame
 
--- Status
+-- Status (UPDATED TO 6/6)
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, 0, 0, 25)
 statusLabel.Position = UDim2.new(0, 0, 1, -25)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "0/5 Active"
+statusLabel.Text = "0/6 Active"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.GothamSemibold
 statusLabel.Parent = content
 
--- Box Toggles
-local icons = {"🎁", "⚔️", "⚙️", "🔮", "🃏"}
+-- Box Toggles (UPDATED ICONS + Smart's Gearbox)
+local icons = {"🎁", "⚔️", "⚙️", "🔮", "🃏", "🧠"}  -- ✅ ADDED BRAIN ICON FOR SMART'S
 for i, box in pairs(BOXES) do
     local boxFrame = Instance.new("Frame")
     boxFrame.Size = UDim2.new(1, 0, 0, 42)
@@ -224,7 +225,7 @@ for i, box in pairs(BOXES) do
         toggleBtn.Text = box.enabled and "ON" or "OFF"
         toggleBtn.BackgroundColor3 = box.enabled and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(200, 50, 50)
         local count = getEnabledCount()
-        statusLabel.Text = count .. "/5 Active"
+        statusLabel.Text = count .. "/6 Active"  -- ✅ UPDATED TO 6
         statusLabel.TextColor3 = count > 0 and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(200, 200, 200)
     end)
 end
@@ -234,24 +235,24 @@ listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
 end)
 
--- Update status awal
+-- Update status awal (UPDATED TO 6/6)
 local count = getEnabledCount()
-statusLabel.Text = count .. "/5 Active"
+statusLabel.Text = count .. "/6 Active"
 statusLabel.TextColor3 = count > 0 and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(200, 200, 200)
 
--- Master Toggle
+-- Master Toggle (UPDATED STATUS DISPLAY)
 masterBtn.MouseButton1Click:Connect(function()
     masterToggle = not masterToggle
     local enabledCount = getEnabledCount()
     if masterToggle then
         masterBtn.Text = "MASTER: ON"
         masterBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 80)
-        statusLabel.Text = "Opening " .. enabledCount .. "/5"
+        statusLabel.Text = "Opening " .. enabledCount .. "/6"  -- ✅ UPDATED TO 6
         startAutoOpen()
     else
         masterBtn.Text = "MASTER: OFF"
         masterBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        statusLabel.Text = enabledCount .. "/5 Active"
+        statusLabel.Text = enabledCount .. "/6 Active"  -- ✅ UPDATED TO 6
         stopAutoOpen()
     end
 end)
@@ -303,4 +304,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("✅ CENTER SCREEN GUI LOADED! Drag header, 5 boxes ready!")
+print("✅ CENTER SCREEN GUI LOADED! 6 boxes ready! (Smart's Gearbox ADDED 🧠)")
